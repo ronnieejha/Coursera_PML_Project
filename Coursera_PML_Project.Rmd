@@ -1,0 +1,99 @@
+---
+title: "Coursera_PML_Project"
+author: "Ashish Jha"
+date: "2 September 2017"
+output: html_document
+---
+
+
+#Reading data into R
+
+```{r}
+library(readr)
+library(caret)
+library(randomForest)
+training <- read_csv("pml-training.csv")
+pml_testing <- read_csv("pml-testing.csv")
+```
+
+removing columns which have more than 90% missing values
+
+```{r}
+training<- training[, -which(colMeans(is.na(training)) > 0.9)]
+pml_testing<- pml_testing[, -which(colMeans(is.na(pml_testing)) > 0.9)]
+```
+
+Coverting classe in dataset as dummy variables because classe is of character dataset and would pose difficulty in further analysis.
+
+```{r}
+dummy <- training$classe
+dummy[dummy == "A"] <- 1
+dummy[dummy == "B"] <- 2
+dummy[dummy == "C"] <- 3
+dummy[dummy == "D"] <- 4
+dummy[dummy == "E"] <- 5
+
+dummy <- as.numeric(dummy)
+
+training$dummy <- dummy
+```
+
+Spliting dataset into training set and validation set
+
+```{r}
+part <- createDataPartition(y=training$classe, p=0.7, list = FALSE)
+train <- training[part,]
+valid <- training[-part,]
+```
+
+
+
+Checking datatype of varibles in dataset since variables with character datatype won't work with randomforest
+```{r}
+str(train)
+```
+
+
+
+Using random forest to train the using randomforest with 500 trees. Used randomforest as it is work horse , tried and tested. RandomForest works well all the time.
+
+
+```{r}
+fit_train <- randomForest(formula = dummy ~ ., data = train[,-c(1,2,5,6,60)],importance=TRUE,na.action=na.omit,ntree = 500,mtry=100)
+```
+
+#Prediciting on validation set
+
+```{r}
+pred_valid <- predict(fit_train, newdata = valid[,-c(1,2,5,6,60)])
+pred_valid_round <- round(pred_valid, digits = 0)
+table(pred_valid_round, valid$dummy)
+```
+
+Test results were overwhelming with accuracy of 99.67% . Hence i will accept this model for final prediction 
+
+```{r}
+pred_test <- predict(fit_train, newdata= pml_testing[,-c(1,2,5,6,60)])
+pred_test_round <- round(pred_test, digits = 0)
+pred_test_round
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
